@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Girish AI Thumbnail & Content Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden; /* Prevents horizontal scrollbars */
+        }
+
+        /* Sparkle container */
+        .sparkle-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        /* Individual sparkle element */
+        .sparkle {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: sparkle-animation 5s infinite;
+            box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes sparkle-animation {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 0.8; transform: scale(1.2); }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a202c; }
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+        
+        /* Loader */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* AI Content & History Styles */
+        .ai-title-item { background-color: rgba(74, 85, 104, 0.3); border-left: 3px solid #6366f1; transition: background-color 0.3s; cursor: pointer; }
+        .ai-title-item:hover { background-color: rgba(74, 85, 104, 0.5); }
+        .history-item { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+        .history-item:hover { transform: scale(1.03); box-shadow: 0 0 15px rgba(129, 140, 248, 0.5); }
+        
+        /* Aspect Ratio Styles */
+        .aspect-youtube { aspect-ratio: 16 / 9; }
+        .aspect-square { aspect-ratio: 1 / 1; }
+        .aspect-portrait { aspect-ratio: 9 / 16; }
+        .aspect-instagram-portrait { aspect-ratio: 4 / 5; }
+        .aspect-pinterest { aspect-ratio: 2 / 3; }
+        .aspect-facebook { aspect-ratio: 1.91 / 1; }
+        .aspect-twitter { aspect-ratio: 2 / 1; }
+
+        /* Preview Modal Styles */
+        #preview-modal { transition: opacity 0.3s ease-in-out; }
+        #preview-modal.hidden { opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Sparkle Background Container -->
+    <div class="sparkle-background" id="sparkle-container"></div>
+    
+    <!-- Notification container -->
+    <div id="notification-container" class="fixed top-5 right-5 z-50 w-full max-w-xs"></div>
+
+    <!-- Main Content -->
+    <div class="relative min-h-screen flex flex-col items-center p-4 overflow-y-auto">
+        <div class="w-full max-w-4xl mx-auto z-10">
+
+            <!-- Header -->
+            <header class="text-center mb-8">
+                <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                    Girish AI Thumbnail & Content Suite
+                </h1>
+                <p class="text-gray-400 mt-2">Generate stunning thumbnails and marketing copy with the power of AI.</p>
+            </header>
+
+            <!-- Generator Main -->
+            <main class="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 md:p-8 shadow-2xl shadow-purple-500/10">
+                <!-- Input Section -->
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    <input type="text" id="prompt-input" placeholder="Enter a topic or a detailed prompt..." class="flex-grow bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:outline-none transition duration-300">
+                    <select id="aspect-ratio-select" class="bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                        <option value="youtube">YouTube (16:9)</option>
+                        <option value="square">Square (1:1)</option>
+                        <option value="portrait">Portrait (9:16)</option>
+                        <option value="instagram-portrait">Instagram Portrait (4:5)</option>
+                        <option value="pinterest">Pinterest Pin (2:3)</option>
+                        <option value="facebook">Facebook Post (1.91:1)</option>
+                        <option value="twitter">Twitter (2:1)</option>
+                    </select>
+                    <button id="generate-btn" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 whitespace-nowrap">
+                        Generate Image
+                    </button>
+                </div>
+                
+                <!-- AI Helper Buttons -->
+                <div class="flex flex-wrap gap-3 justify-center md:justify-start mb-6 border-t border-gray-700 pt-4">
+                    <button id="enhance-prompt-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded-lg transition duration-300 flex items-center">✨ Enhance Prompt</button>
+                    <button id="suggest-titles-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded-lg transition duration-300 flex items-center">✨ Suggest Titles</button>
+                    <button id="generate-desc-btn" class="bg-gray-600 hover:bg-gray-500 text-white font-medium py-2 px-4 rounded-lg transition duration-300 flex items-center">✨ Generate Description</button>
+                </div>
+
+                <!-- Image Display Area -->
+                <div id="image-container" class="w-full bg-gray-700/50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600 aspect-youtube mx-auto max-w-full" style="max-height: 50vh;">
+                    <div id="placeholder" class="text-center text-gray-400 p-4">
+                        <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <p class="mt-2 text-sm">Your generated thumbnail will appear here.</p>
+                    </div>
+                    <div id="loader" class="loader hidden"></div>
+                    <img id="generated-image" src="" alt="Generated Thumbnail" class="hidden w-full h-full object-cover rounded-lg">
+                </div>
+
+                <!-- Action Buttons for Image -->
+                <div id="image-actions" class="mt-4 flex justify-center gap-4 hidden">
+                    <button id="preview-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">Preview</button>
+                    <button id="download-btn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">Download</button>
+                </div>
+                
+                <!-- AI Generated Content Section -->
+                <div id="ai-content-section" class="mt-8 space-y-6 hidden">
+                    <div id="titles-container" class="hidden">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-200">✨ AI Suggested Titles</h3>
+                        <div id="titles-list" class="space-y-2"></div>
+                    </div>
+                    <div id="description-container" class="hidden">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-200">✨ AI Generated Description</h3>
+                        <textarea id="description-output" class="w-full h-48 bg-gray-700 border border-gray-600 text-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none" readonly></textarea>
+                        <button id="copy-desc-btn" class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">Copy Description</button>
+                    </div>
+                </div>
+            </main>
+
+            <!-- History Section -->
+            <section id="history-section" class="mt-12 hidden">
+                <h2 class="text-2xl font-bold text-center mb-6">Generation History</h2>
+                <div id="history-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+            </section>
+
+            <!-- Footer -->
+            <footer class="text-center mt-12 pb-8">
+                <p class="text-gray-500 mb-4">Connect with me</p>
+                <div class="flex justify-center items-center space-x-6">
+                    <a href="https://www.instagram.com/girish_lade_/" target="_blank" class="text-gray-400 hover:text-pink-500 transition-colors duration-300" title="Instagram"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919C8.416 2.175 8.796 2.163 12 2.163zm0 1.802C9.042 3.965 8.71 3.977 7.437 4.04c-2.596.118-3.903 1.448-4.017 4.017-.063 1.272-.074 1.623-.074 4.939 0 3.316.011 3.667.074 4.939.114 2.569 1.421 3.899 4.017 4.017 1.271.063 1.603.075 4.563.075s3.292-.012 4.563-.075c2.596-.118 3.903-1.448 4.017-4.017.063-1.272.074-1.623.074-4.939 0-3.316-.011-3.667-.074-4.939-.114-2.569-1.421-3.899-4.017-4.017-1.271-.063-1.603-.075-4.563-.075zM12 6.865a5.135 5.135 0 100 10.27 5.135 5.135 0 000-10.27zm0 8.468a3.333 3.333 0 110-6.666 3.333 3.333 0 010 6.666zm5.338-9.87a1.2 1.2 0 100-2.4 1.2 1.2 0 000 2.4z"></path></svg></a>
+                    <a href="https://www.linkedin.com/in/girish-lade-075bba201/" target="_blank" class="text-gray-400 hover:text-blue-500 transition-colors duration-300" title="LinkedIn"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path></svg></a>
+                    <a href="https://github.com/girishlade111" target="_blank" class="text-gray-400 hover:text-white transition-colors duration-300" title="GitHub"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg></a>
+                    <a href="https://codepen.io/Girish-Lade-the-looper" target="_blank" class="text-gray-400 hover:text-white transition-colors duration-300" title="CodePen"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M23.955 8.218c-.033-2.26-1.64-4.143-3.78-4.526-1.26-.226-2.54-.226-3.802-.226-3.205 0-3.585.012-4.85.07-3.25.148-4.77 1.69-4.92 4.92-.058 1.265-.07 1.644-.07 4.85s.012 3.584.07 4.85c.148 3.228 1.67 4.77 4.92 4.92 1.265.058 1.645.07 4.85.07s3.585-.012 4.85-.07c3.25-.148 4.77-1.69 4.92-4.92.058-1.265.07-1.644.07-4.85s-.012-3.585-.07-4.85zm-4.47 9.27c-.114 2.57-1.42 3.9-4.018 4.018-1.27.063-1.602.075-4.562.075s-3.293-.012-4.563-.075c-2.598-.118-3.904-1.448-4.018-4.018-.063-1.272-.075-1.623-.075-4.94s.012-3.667.075-4.94c.114-2.57 1.42-3.9 4.018-4.018 1.27-.063 1.602-.075 4.563-.075s3.293.012 4.562.075c2.598.118 3.904 1.448 4.018 4.018.063 1.272.075 1.623.075 4.94s-.012 3.667-.075 4.94zM12 17.135a5.135 5.135 0 110-10.27 5.135 5.135 0 010 10.27zm0-8.468a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-1.402a1.2 1.2 0 11-2.4 0 1.2 1.2 0 012.4 0z"></path></svg></a>
+                    <a href="mailto:girishlade111@gmail.com" class="text-gray-400 hover:text-red-500 transition-colors duration-300" title="Email"><svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0l-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z"></path></svg></a>
+                </div>
+                <p id="copyright" class="text-gray-500 text-sm mt-6">&copy; <span id="copyright-year"></span> Girish Lade. All Rights Reserved.</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 hidden">
+        <img id="preview-image" src="" class="max-w-full max-h-full object-contain">
+        <button id="close-modal-btn" class="absolute top-4 right-4 text-white text-4xl font-bold">&times;</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Element References ---
+            const allElements = {
+                sparkleContainer: document.getElementById('sparkle-container'),
+                promptInput: document.getElementById('prompt-input'),
+                generateBtn: document.getElementById('generate-btn'),
+                imageContainer: document.getElementById('image-container'),
+                placeholder: document.getElementById('placeholder'),
+                loader: document.getElementById('loader'),
+                generatedImage: document.getElementById('generated-image'),
+                imageActions: document.getElementById('image-actions'),
+                previewBtn: document.getElementById('preview-btn'),
+                downloadBtn: document.getElementById('download-btn'),
+                enhancePromptBtn: document.getElementById('enhance-prompt-btn'),
+                suggestTitlesBtn: document.getElementById('suggest-titles-btn'),
+                generateDescBtn: document.getElementById('generate-desc-btn'),
+                aiContentSection: document.getElementById('ai-content-section'),
+                titlesContainer: document.getElementById('titles-container'),
+                titlesList: document.getElementById('titles-list'),
+                descriptionContainer: document.getElementById('description-container'),
+                descriptionOutput: document.getElementById('description-output'),
+                copyDescBtn: document.getElementById('copy-desc-btn'),
+                notificationContainer: document.getElementById('notification-container'),
+                aspectRatioSelect: document.getElementById('aspect-ratio-select'),
+                historySection: document.getElementById('history-section'),
+                historyGrid: document.getElementById('history-grid'),
+                previewModal: document.getElementById('preview-modal'),
+                previewImage: document.getElementById('preview-image'),
+                closeModalBtn: document.getElementById('close-modal-btn'),
+                copyrightYear: document.getElementById('copyright-year'),
+            };
+
+            let generationHistory = [];
+            let currentImageUrl = null;
+
+            // --- Utility Functions ---
+            const showNotification = (message, type = 'info') => {
+                const colors = { info: 'bg-blue-600', error: 'bg-red-600', success: 'bg-green-600' };
+                const notification = document.createElement('div');
+                notification.className = `p-4 rounded-lg shadow-lg text-white transition-all duration-300 transform mb-2 ${colors[type]}`;
+                notification.textContent = message;
+                allElements.notificationContainer.appendChild(notification);
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            };
+            
+            const setButtonLoading = (button, isLoading) => {
+                button.disabled = isLoading;
+                if (isLoading) {
+                    button.dataset.originalText = button.innerHTML;
+                    button.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>`;
+                } else {
+                    button.innerHTML = button.dataset.originalText;
+                }
+            };
+            
+            // --- Sparkle Effect ---
+            const createSparkles = () => {
+                const sparkleCount = 50;
+                for (let i = 0; i < sparkleCount; i++) {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'sparkle';
+                    const size = Math.random() * 3 + 1;
+                    sparkle.style.width = `${size}px`;
+                    sparkle.style.height = `${size}px`;
+                    sparkle.style.top = `${Math.random() * 100}%`;
+                    sparkle.style.left = `${Math.random() * 100}%`;
+                    sparkle.style.animationDelay = `${Math.random() * 5}s`;
+                    sparkle.style.animationDuration = `${Math.random() * 3 + 4}s`;
+                    allElements.sparkleContainer.appendChild(sparkle);
+                }
+            };
+            createSparkles();
+
+            // --- UI Update Functions ---
+            const displayImage = (imageUrl) => {
+                currentImageUrl = imageUrl;
+                allElements.generatedImage.src = imageUrl;
+                allElements.placeholder.classList.add('hidden');
+                allElements.loader.classList.add('hidden');
+                allElements.generatedImage.classList.remove('hidden');
+                allElements.imageActions.classList.remove('hidden');
+            };
+
+            // --- History Management ---
+            const updateHistory = () => {
+                allElements.historyGrid.innerHTML = '';
+                if (generationHistory.length > 0) {
+                    allElements.historySection.classList.remove('hidden');
+                }
+                generationHistory.forEach((item, index) => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item cursor-pointer bg-gray-700 rounded-lg overflow-hidden relative';
+                    historyItem.innerHTML = `
+                        <img src="${item.imageUrl}" alt="History thumbnail" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/60 opacity-0 hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 text-center">
+                            <p class="text-xs text-white">${item.prompt}</p>
+                            <button class="text-xs bg-indigo-500 text-white px-2 py-1 rounded mt-1" data-index="${index}">Reuse</button>
+                        </div>
+                    `;
+                    allElements.historyGrid.prepend(historyItem);
+                });
+            };
+
+            allElements.historyGrid.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' && e.target.dataset.index) {
+                    const index = parseInt(e.target.dataset.index, 10);
+                    const historyItem = generationHistory[index];
+                    allElements.promptInput.value = historyItem.prompt;
+                    displayImage(historyItem.imageUrl);
+                    showNotification('Loaded from history!', 'success');
+                }
+            });
+
+            // --- API Call Functions ---
+            const callGeminiAPI = async (payload) => {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                return response.json();
+            };
+            
+            const getEnhancedPrompt = async (originalPrompt) => {
+                const systemPrompt = `You are an AI art director. Take the user's topic and transform it into a detailed, visually compelling prompt for an image generation AI. The prompt should describe a dynamic, high-quality scene with dramatic lighting and a clear subject. Always include quality keywords like '4k', 'ultra-detailed', 'masterpiece'. Return ONLY the enhanced prompt.`;
+                const payload = { contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\nTopic: "${originalPrompt}"` }] }] };
+                const result = await callGeminiAPI(payload);
+                return result.candidates[0].content.parts[0].text.trim();
+            };
+
+            const generateImage = async () => {
+                const originalPrompt = allElements.promptInput.value;
+                if (!originalPrompt) {
+                    showNotification("Please enter a topic to generate an image.", 'error');
+                    return;
+                }
+                setButtonLoading(allElements.generateBtn, true);
+                allElements.placeholder.classList.add('hidden');
+                allElements.generatedImage.classList.add('hidden');
+                allElements.imageActions.classList.add('hidden');
+                allElements.loader.classList.remove('hidden');
+
+                let finalPrompt = originalPrompt;
+                try {
+                    showNotification("Consulting with AI Art Director...", 'info');
+                    finalPrompt = await getEnhancedPrompt(originalPrompt);
+                    console.log("Art Director's Prompt:", finalPrompt);
+                } catch (error) {
+                    console.error("Could not enhance prompt, using original.", error);
+                    showNotification("Art Director is busy, using original prompt.", 'info');
+                }
+
+                try {
+                    const aspectRatioValue = allElements.aspectRatioSelect.value;
+                    const aspectRatioMap = {
+                        'youtube': '16:9',
+                        'square': '1:1',
+                        'portrait': '9:16',
+                        'instagram-portrait': '4:5',
+                        'pinterest': '2:3',
+                        'facebook': '1.91:1',
+                        'twitter': '2:1'
+                    };
+                    const apiAspectRatio = aspectRatioMap[aspectRatioValue];
+
+                    const payload = { 
+                        instances: [{ prompt: finalPrompt }], 
+                        parameters: { 
+                            "sampleCount": 1,
+                            "aspectRatio": apiAspectRatio 
+                        } 
+                    };
+
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const result = await response.json();
+                    if (result.predictions && result.predictions[0]?.bytesBase64Encoded) {
+                        const imageUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                        displayImage(imageUrl);
+                        generationHistory.push({ prompt: originalPrompt, imageUrl });
+                        updateHistory();
+                    } else {
+                        throw new Error("Invalid response structure from image API.");
+                    }
+                } catch (error) {
+                    console.error("Error generating image:", error);
+                    showNotification("Failed to generate image. Please try again.", 'error');
+                    allElements.placeholder.classList.remove('hidden');
+                    allElements.loader.classList.add('hidden');
+                } finally {
+                    setButtonLoading(allElements.generateBtn, false);
+                }
+            };
+
+            // --- Event Handlers ---
+            allElements.enhancePromptBtn.addEventListener('click', async () => {
+                const originalPrompt = allElements.promptInput.value;
+                if (!originalPrompt) {
+                    showNotification("Please enter a prompt to enhance.", 'error');
+                    return;
+                }
+                setButtonLoading(allElements.enhancePromptBtn, true);
+                try {
+                    const enhancedText = await getEnhancedPrompt(originalPrompt);
+                    allElements.promptInput.value = enhancedText;
+                    showNotification("Prompt enhanced successfully!", 'success');
+                } catch (error) {
+                    showNotification("Failed to enhance prompt.", 'error');
+                } finally {
+                    setButtonLoading(allElements.enhancePromptBtn, false);
+                }
+            });
+
+            const handleDownload = () => {
+                if (!currentImageUrl) return;
+                const a = document.createElement('a');
+                a.href = currentImageUrl;
+                a.download = 'ai-thumbnail.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            const openPreview = () => {
+                if (!currentImageUrl) return;
+                allElements.previewImage.src = currentImageUrl;
+                allElements.previewModal.classList.remove('hidden');
+            };
+
+            const closePreview = () => {
+                allElements.previewModal.classList.add('hidden');
+            };
+
+            allElements.aspectRatioSelect.addEventListener('change', () => {
+                const ratio = allElements.aspectRatioSelect.value;
+                const allRatios = ['youtube', 'square', 'portrait', 'instagram-portrait', 'pinterest', 'facebook', 'twitter'];
+                allElements.imageContainer.classList.remove(...allRatios.map(r => `aspect-${r}`));
+                allElements.imageContainer.classList.add(`aspect-${ratio}`);
+            });
+
+            // --- Initial Setup & Event Listeners ---
+            allElements.copyrightYear.textContent = new Date().getFullYear();
+            allElements.generateBtn.addEventListener('click', generateImage);
+            allElements.downloadBtn.addEventListener('click', handleDownload);
+            allElements.previewBtn.addEventListener('click', openPreview);
+            allElements.closeModalBtn.addEventListener('click', closePreview);
+            allElements.previewModal.addEventListener('click', (e) => {
+                if (e.target === allElements.previewModal) {
+                    closePreview();
+                }
+            });
+            allElements.promptInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') generateImage();
+            });
+            
+            allElements.suggestTitlesBtn.addEventListener('click', () => showNotification('Title suggestion feature coming soon!', 'info'));
+            allElements.generateDescBtn.addEventListener('click', () => showNotification('Description generation feature coming soon!', 'info'));
+
+        });
+    </script>
+</body>
+</html>
